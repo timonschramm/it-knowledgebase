@@ -6,7 +6,10 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sync"
 	"time"
+
+	"connectionhelper"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -51,14 +54,38 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 func detailHandler(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("templates/detail.gohtml"))
 	t.Execute(w, mert)
+
 }
 
-var password = "meinpasswort"
 var user = "timon"
 
+var clientInstance *mongo.Client
+var clientInstanceError error
+var mongoOnce sync.Once
+
+func GetMongoClient() (*mongo.Client, error) {
+	mongoOnce.Do(func() {
+		clientOptions := options.Client().ApplyURI("mongodb://" + user + ":timonTKR@23.88.103.113:30001/" + user)
+		client, err := mongo.Connect(context.TODO(), clientOptions)
+		if err != nil {
+			clientInstanceError = err
+		}
+		err = client.Ping(context.TODO(), nil)
+		if err != nil {
+			clientInstanceError = err
+		}
+		clientInstance = client
+
+	})
+	return clientInstance, clientInstanceError
+}
+
 func main() {
+
+	//https://www.mongodb.com/blog/post/quick-start-golang--mongodb--how-to-read-documents
 	// clienct connection string
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://" + user + ":timonTKR@23.88.103.113:30001/" + user))
+	//client = mongo.NewClient(options.Client().ApplyURI("mongodb://" + user + ":timonTKR@23.88.103.113:30001/" + user))
+	client, err := connectionhelper.GetMongoClient()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,9 +132,7 @@ func main() {
 	http.HandleFunc("/login/", loginHandler)
 	http.HandleFunc("/loginauth/", authHandler)
 	http.HandleFunc("/detail/", detailHandler)
-	//http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	http.Handle("/assets/images/", http.StripPrefix("/assets/images/", http.FileServer(http.Dir("assets/images"))))
-
 	http.ListenAndServe(":80", nil)
 }
