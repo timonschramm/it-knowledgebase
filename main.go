@@ -57,10 +57,12 @@ var password = "meinpasswort"
 var user = "timon"
 
 func main() {
+	// clienct connection string
 	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://" + user + ":timonTKR@23.88.103.113:30001/" + user))
 	if err != nil {
 		log.Fatal(err)
 	}
+	// 10 seconds to connect
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	err = client.Connect(ctx)
 	if err != nil {
@@ -71,11 +73,33 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// all databases
 	databases, err := client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(databases)
+
+	// timon database
+	timonDatabase := client.Database("timon")
+	// links the vereine-Collection
+	vereineCollection := timonDatabase.Collection("vereine")
+
+	cursor, err := vereineCollection.Find(ctx, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	var vereine []bson.M
+	// &vereine is the place where the error will be loaded in -> so it is transferred into the var vereine
+	if err = cursor.All(ctx, &vereine); err != nil {
+		log.Fatal(err)
+	}
+	//fmt.Println(vereine)
+
+	for _, verein := range vereine {
+		fmt.Println(verein["name"])
+	}
 
 	http.HandleFunc("/", feedHandler)
 	http.HandleFunc("/login/", loginHandler)
