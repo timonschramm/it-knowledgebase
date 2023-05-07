@@ -1,4 +1,1 @@
-# IT-Knowledgebase
-Dieses Projekt, dient zur Erstellung des Blogs "IT-Knowledgebase" 
-
-# Entwicklung
+IT-Knowledgebase offers a further developed version of our blog, accessible at https://it-knowledgebase.net/.
